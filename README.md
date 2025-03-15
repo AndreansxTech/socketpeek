@@ -26,14 +26,24 @@ pip install git+https://github.com/AndreansxTech/socketpeek.git
 
 ## Usage
 
-After installation, you can use the command directly:
+### Text User Interface (TUI)
+
+Simply run the command without arguments to launch the interactive interface:
 ```
-socketpeek <host> <port>
+socketpeek
 ```
 
-If you prefer to run it without installation:
+The TUI provides a user-friendly interface where you can:
+- Enter the host (IP or domain name)
+- Specify the port number
+- Set the connection timeout
+- Check the connection with a button press
+
+### Command Line Interface (CLI)
+
+You can also use the tool from the command line:
 ```
-python src/main.py <host> <port>
+socketpeek <host> <port> [options]
 ```
 
 Examples:
@@ -45,15 +55,16 @@ socketpeek example.com 443 --timeout 5
 
 ### Options
 
-- `<host>`: Required. The host address (IP or domain name)
-- `<port>`: Required. The port number (1-65535)
+- `<host>`: The host address (IP or domain name)
+- `<port>`: The port number (1-65535)
 - `-t, --timeout`: Optional. Connection timeout in seconds (default: 3.0)
 - `-h, --help`: Show help message
 
 ## Features
 
-- Simple command-line interface
-- Color-coded output (green for open ports, red for closed ports)
+- Text-based user interface for interactive use
+- Command-line interface for scripting and quick checks
+- Color-coded output for better readability
 - Detailed error messages
 - Configurable connection timeout
 
@@ -61,3 +72,4 @@ socketpeek example.com 443 --timeout 5
 
 - Python 3.6+
 - colorama
+- textual

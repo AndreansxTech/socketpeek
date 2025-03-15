@@ -6,6 +6,7 @@ setup(
     packages=find_packages(),
     install_requires=[
         "colorama>=0.4.6",
+        "textual>=0.27.0",
     ],
     entry_points={
         'console_scripts': [
