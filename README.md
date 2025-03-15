@@ -1,32 +1,32 @@
-# SocketPeek
+# ⚡ SocketPeek ⚡
 
-A little something made for the Terminalcraft event from Hackclub. Made using Python
+A network utility tool made for the Terminalcraft event from Hackclub. Made using Python. 🐍
 
-## Installation
+## 🚀 Installation
 
-### Development Installation
+### 🛠️ Development Installation
 
-1. Clone this repository:
+1.  Clone this repository:
 ```
 git clone https://github.com/AndreansxTech/socketpeek.git
 cd socketpeek
 ```
 
-2. Install in development mode:
+2.  Install in development mode:
 ```
 pip install -e .
 ```
 
-### Regular Installation
+### ✅ Regular Installation
 
 You can install directly from the repository:
 ```
 pip install git+https://github.com/AndreansxTech/socketpeek.git
 ```
 
-## Usage
+## 💡 Usage
 
-### Text User Interface (TUI)
+### 🖥️ Text User Interface (TUI)
 
 Simply run the command without arguments to launch the interactive interface:
 ```
@@ -34,42 +34,60 @@ socketpeek
 ```
 
 The TUI provides a user-friendly interface where you can:
-- Enter the host (IP or domain name)
-- Specify the port number
-- Set the connection timeout
-- Check the connection with a button press
+-   Enter the host (IP or domain name) 🌐
+-   Specify the port number 🚪
+-   Set the connection timeout ⏱️
+-   Check port status or run a traceroute 🔎
+-   View results in a tabbed interface 📑
 
-### Command Line Interface (CLI)
+### ⌨️ Command Line Interface (CLI)
 
-You can also use the tool from the command line:
+You can use the tool from the command line for port checking:
+```
+socketpeek port <host> <port> [options]
+```
+
+Or for traceroute:
+```
+socketpeek trace <host> [options]
+```
+
+For backward compatibility, the old format still works:
 ```
 socketpeek <host> <port> [options]
 ```
 
 Examples:
 ```
-socketpeek google.com 80
-socketpeek 192.168.1.1 22
-socketpeek example.com 443 --timeout 5
+socketpeek port google.com 80
+socketpeek trace example.com
+socketpeek trace 192.168.1.1 --max-hops 15 --timeout 2
 ```
 
-### Options
+### 🔌 Port Check Options
 
-- `<host>`: The host address (IP or domain name)
-- `<port>`: The port number (1-65535)
-- `-t, --timeout`: Optional. Connection timeout in seconds (default: 3.0)
-- `-h, --help`: Show help message
+-   `<host>`: The host address (IP or domain name)
+-   `<port>`: The port number (1-65535)
+-   `-t, --timeout`: Optional. Connection timeout in seconds (default: 3.0)
 
-## Features
+### 🗺️ Traceroute Options
 
-- Text-based user interface for interactive use
-- Command-line interface for scripting and quick checks
-- Color-coded output for better readability
-- Detailed error messages
-- Configurable connection timeout
+-   `<host>`: The host address (IP or domain name)
+-   `-m, --max-hops`: Optional. Maximum number of hops (default: 30)
+-   `-t, --timeout`: Optional. Timeout for each hop in seconds (default: 1.0)
 
-## Requirements
+## ✨ Features
 
-- Python 3.6+
-- colorama
-- textual
+-   Text-based user interface for interactive use 💻
+-   Command-line interface for scripting and quick checks ⌨️
+-   Port status checking 🚪
+-   Network route tracing (traceroute) 🗺️
+-   Color-coded output for better readability 🌈
+-   Detailed error messages ⚠️
+-   Configurable timeouts and hop limits ⏱️
+
+## ⚙️ Requirements
+
+-   Python 3.6+ 🐍
+-   colorama 🎨
+-   textual 📰
