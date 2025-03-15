@@ -3,7 +3,7 @@
 import argparse
 import sys
 from colorama import init, Fore, Style
-from .utils import check_port, validate_port, traceroute
+from .utils import check_port, validate_port, traceroute, whois
 
 init()
 
@@ -13,7 +13,7 @@ def main():
         tui_main()
         return
 
-    parser = argparse.ArgumentParser(description='Check if a port is open on a specified host or run a traceroute.')
+    parser = argparse.ArgumentParser(description='Network utility tools for checking ports, traceroute and WHOIS lookups.')
     subparsers = parser.add_subparsers(dest='command', help='Command to run')
 
     port_parser = subparsers.add_parser('port', help='Check if a port is open')
@@ -28,6 +28,9 @@ def main():
                           help='Maximum number of hops (default: 30)')
     trace_parser.add_argument('-t', '--timeout', type=float, default=1.0,
                           help='Timeout for each hop in seconds (default: 1.0)')
+    
+    whois_parser = subparsers.add_parser('whois', help='Perform WHOIS lookup')
+    whois_parser.add_argument('domain', help='Domain name or IP address')
 
     args = parser.parse_args()
     
@@ -47,6 +50,8 @@ def main():
         run_port_check(args)
     elif args.command == 'trace':
         run_traceroute(args)
+    elif args.command == 'whois':
+        run_whois(args)
     else:
         parser.print_help()
         sys.exit(1)
@@ -96,6 +101,18 @@ def run_traceroute(args):
             print(f"{hop_num}. {status_color}{ip} - {time_ms}{status_text}{Style.RESET_ALL}")
         else:
             print(f"{hop_num}. {status_color}{ip} ({hostname}) - {time_ms}{status_text}{Style.RESET_ALL}")
+
+def run_whois(args):
+    print(f"Looking up WHOIS information for {args.domain}...")
+    
+    result = whois(args.domain)
+    
+    if "Error" in result:
+        print(f"{Fore.RED}{result}{Style.RESET_ALL}")
+        sys.exit(1)
+    
+    print(f"\nWHOIS information for {args.domain}:\n")
+    print(result)
 
 if __name__ == "__main__":
     main()

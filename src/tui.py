@@ -1,7 +1,7 @@
 from textual.app import App, ComposeResult
 from textual.containers import Container, Vertical, ScrollableContainer
 from textual.widgets import Header, Footer, Input, Button, Static, Label
-from .utils import check_port, validate_port, traceroute
+from .utils import check_port, validate_port, traceroute, whois
 
 class SocketPeekApp(App):
     CSS = """
@@ -51,7 +51,7 @@ class SocketPeekApp(App):
         width: 100%;
         height: auto;
         layout: grid;
-        grid-size: 2;
+        grid-size: 3;
         grid-gutter: 1 2;
         padding: 0 1;
     }
@@ -76,6 +76,7 @@ class SocketPeekApp(App):
         padding: 1;
         height: 1fr;
         overflow-y: auto;
+        min-height: 20;
     }
     
     #result-container {
@@ -97,7 +98,7 @@ class SocketPeekApp(App):
     
     .action-button {
         width: 100%;
-        min-width: 15;
+        min-width: 10;
     }
 
     .action-button:hover {
@@ -115,6 +116,12 @@ class SocketPeekApp(App):
 
     Vertical > Static {
         height: auto;
+    }
+
+    .mode-indicator {
+        text-align: right;
+        color: #0ff;
+        margin-right: 1;
     }
     """
 
@@ -141,6 +148,7 @@ class SocketPeekApp(App):
                 with Container(id="button-container"):
                     yield Button("Check Port", variant="primary", id="check-button", classes="action-button")
                     yield Button("Traceroute", variant="default", id="trace-button", classes="action-button")
+                    yield Button("WHOIS", variant="default", id="whois-button", classes="action-button")
             
             with Container(id="result-area"):
                 yield Label("Results", id="result-title")
@@ -154,6 +162,8 @@ class SocketPeekApp(App):
             self.check_connection()
         elif event.button.id == "trace-button":
             self.run_traceroute()
+        elif event.button.id == "whois-button":
+            self.run_whois()
     
     def on_input_submitted(self, event: Input.Submitted) -> None:
         self.check_connection()
@@ -212,13 +222,15 @@ class SocketPeekApp(App):
         result_display.update("")
         
         if not host:
-            result_display.update("[red]ERROR: Please enter a hostname or IP address[/red]")
+            result_display.update("ERROR: Please enter a hostname or IP address")
+            result_display.styles.color = "red"
             return
         
         try:
             timeout = float(timeout_str) if timeout_str else 3.0
         except ValueError:
-            result_display.update(f"[red]ERROR: Invalid timeout value: {timeout_str}. Please enter a valid number.[/red]")
+            result_display.update(f"ERROR: Invalid timeout value: {timeout_str}. Please enter a valid number.")
+            result_display.styles.color = "red"
             return
         
         result_display.update(f"Running traceroute to {host}...\nThis may take some time, please wait...")
@@ -227,12 +239,14 @@ class SocketPeekApp(App):
         trace_result = traceroute(host, max_hops=30, timeout=timeout)
         
         if not trace_result:
-            result_display.update(f"[red]ERROR: Traceroute to {host} failed.[/red]")
+            result_display.update(f"ERROR: Traceroute to {host} failed.")
+            result_display.styles.color = "red"
             return
             
         if trace_result and "error" in trace_result[0] and trace_result[0]["error"] and trace_result[0]["hop"] == 0:
             error_msg = trace_result[0]["error"]
-            result_display.update(f"[red]ERROR: {error_msg}[/red]")
+            result_display.update(f"ERROR: {error_msg}")
+            result_display.styles.color = "red"
             return
         
         output = []
@@ -271,6 +285,35 @@ class SocketPeekApp(App):
         
         output.append("-" * 50)
         output.append(f"Trace complete. {len(trace_result)} hops traversed.")
+        
+        result_display.update("\n".join(output))
+        result_display.styles.color = "white"
+
+    def run_whois(self) -> None:
+        host = self.query_one("#host-input").value
+        result_display = self.query_one("#result-content")
+        
+        result_display.update("")
+        
+        if not host:
+            result_display.update("ERROR: Please enter a hostname or IP address")
+            result_display.styles.color = "red"
+            return
+        
+        result_display.update(f"Running WHOIS lookup for {host}...\nThis may take some time, please wait...")
+        result_display.styles.color = "blue"
+        
+        whois_result = whois(host)
+        
+        if not whois_result or "Error" in whois_result:
+            result_display.update(f"ERROR: WHOIS lookup for {host} failed.\n\n{whois_result}")
+            result_display.styles.color = "red"
+            return
+        
+        output = []
+        output.append(f"WHOIS Information for {host}:")
+        output.append("-" * 50)
+        output.append(whois_result)
         
         result_display.update("\n".join(output))
         result_display.styles.color = "white"

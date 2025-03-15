@@ -15,8 +15,8 @@ setup(
     },
     author="AndreansxTech",
     author_email="your.email@example.com",
-    description="A tool to check port connectivity and trace network routes",
-    keywords="network, socket, port, scan, traceroute",
+    description="A tool to check port connectivity, trace network routes, and perform WHOIS lookups",
+    keywords="network, socket, port, scan, traceroute, whois",
     url="https://github.com/AndreansxTech/socketpeek",
     classifiers=[
         "Operating System :: OS Independent",

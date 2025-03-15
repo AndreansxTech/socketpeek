@@ -4,6 +4,9 @@ import subprocess
 import platform
 import re
 import sys
+import ipaddress
+from urllib.request import urlopen
+from urllib.parse import quote
 
 def validate_port(port):
     try:
@@ -259,3 +262,171 @@ def _traceroute_ping_fallback(host, max_hops, timeout):
                 })
     
     return result
+
+def whois(domain_or_ip):
+    """
+    Perform WHOIS lookup for a domain or IP address.
+    
+    Args:
+        domain_or_ip (str): The domain name or IP address to look up
+        
+    Returns:
+        str: WHOIS information text
+    """
+    try:
+        # Check if the input is an IP address
+        try:
+            ipaddress.ip_address(domain_or_ip)
+            is_ip = True
+        except ValueError:
+            is_ip = False
+        
+        # Try using external WHOIS API for consistent results
+        if is_ip:
+            url = f"https://rdap.arin.net/registry/ip/{domain_or_ip}"
+        else:
+            url = f"https://rdap.org/domain/{quote(domain_or_ip)}"
+        
+        try:
+            with urlopen(url, timeout=10) as response:
+                if response.status == 200:
+                    import json
+                    data = json.loads(response.read().decode('utf-8'))
+                    return _format_whois_data(data, is_ip)
+        except Exception as e:
+            pass  # Fall back to command-line WHOIS
+        
+        # Fall back to system's WHOIS command
+        if platform.system().lower() == "windows":
+            return _whois_windows(domain_or_ip)
+        else:
+            return _whois_unix(domain_or_ip)
+    except Exception as e:
+        return f"Error performing WHOIS lookup: {str(e)}"
+
+def _whois_windows(domain_or_ip):
+    """Windows implementation using external service"""
+    try:
+        # Windows doesn't have a native whois command
+        # Use socket to connect to whois server
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.connect(("whois.iana.org", 43))
+        s.send((domain_or_ip + "\r\n").encode())
+        
+        response = b""
+        while True:
+            data = s.recv(4096)
+            if not data:
+                break
+            response += data
+        s.close()
+        
+        text = response.decode('utf-8', errors='ignore')
+        
+        # Extract the appropriate whois server
+        refer_match = re.search(r"refer:\s+(\S+)", text, re.IGNORECASE)
+        if refer_match:
+            whois_server = refer_match.group(1)
+            
+            # Query the specific whois server
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.connect((whois_server, 43))
+            s.send((domain_or_ip + "\r\n").encode())
+            
+            response = b""
+            while True:
+                data = s.recv(4096)
+                if not data:
+                    break
+                response += data
+            s.close()
+            
+            return response.decode('utf-8', errors='ignore')
+        
+        return text
+    except Exception as e:
+        # Try an alternative method - querying web service
+        try:
+            with urlopen(f"https://www.whois.com/whois/{quote(domain_or_ip)}", timeout=10) as response:
+                html = response.read().decode('utf-8')
+                # Extract whois data from HTML (simple approach)
+                if '<div class="whois-data">' in html:
+                    start = html.index('<div class="whois-data">') + 24
+                    end = html.index('</div>', start)
+                    data = html[start:end].strip()
+                    return data.replace('<br>', '\n').replace('&nbsp;', ' ')
+        except:
+            pass
+        
+        return f"Error performing WHOIS lookup: {str(e)}"
+
+def _whois_unix(domain_or_ip):
+    """Unix implementation using whois command"""
+    try:
+        output = subprocess.check_output(['whois', domain_or_ip], universal_newlines=True)
+        return output
+    except subprocess.CalledProcessError as e:
+        return f"Error running whois command: {str(e)}"
+    except FileNotFoundError:
+        return "WHOIS command not found. Please install whois package."
+
+def _format_whois_data(data, is_ip=False):
+    """Format JSON WHOIS data into readable text"""
+    result = []
+    
+    # Add header
+    if is_ip:
+        result.append(f"WHOIS for IP: {data.get('handle', '')}")
+    else:
+        result.append(f"WHOIS for domain: {data.get('handle', '')}")
+    
+    result.append("-" * 50)
+    
+    # Extract registration and expiration dates
+    events = data.get('events', [])
+    for event in events:
+        if event.get('eventAction') == 'registration':
+            result.append(f"Registration Date: {event.get('eventDate', 'Unknown')}")
+        elif event.get('eventAction') == 'expiration':
+            result.append(f"Expiration Date: {event.get('eventDate', 'Unknown')}")
+    
+    # Extract nameservers
+    nameservers = data.get('nameservers', [])
+    if nameservers:
+        result.append("\nNameservers:")
+        for ns in nameservers:
+            result.append(f"  {ns.get('ldhName', '')}")
+    
+    # Extract entities (organizations, persons)
+    entities = data.get('entities', [])
+    if entities:
+        result.append("\nRegistrar/Entities:")
+        for entity in entities:
+            result.append(f"  Role: {entity.get('roles', ['Unknown'])[0]}")
+            result.append(f"  Handle: {entity.get('handle', 'Unknown')}")
+            result.append(f"  Name: {entity.get('vcardArray', [[],[]])[-1][-1][-1] if len(entity.get('vcardArray', [[],[]]))>1 else 'Unknown'}")
+            
+            # Add contact info if available
+            vcard = entity.get('vcardArray', [])
+            if len(vcard) > 1:
+                for item in vcard[1]:
+                    if item[0] == 'email':
+                        result.append(f"  Email: {item[3]}")
+                    elif item[0] == 'tel':
+                        result.append(f"  Phone: {item[3]}")
+            
+            result.append("")
+    
+    # Add status information
+    statuses = data.get('status', [])
+    if statuses:
+        result.append("\nStatus:")
+        for status in statuses:
+            result.append(f"  {status}")
+    
+    # If we couldn't parse the JSON properly, just return the raw data
+    if len(result) < 5:
+        import json
+        return json.dumps(data, indent=2)
+    
+    return "\n".join(result)
